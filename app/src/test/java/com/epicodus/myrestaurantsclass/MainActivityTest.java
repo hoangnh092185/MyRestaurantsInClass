@@ -4,6 +4,9 @@ import android.content.Intent;
 import android.os.Build;
 import android.widget.TextView;
 
+import com.epicodus.myrestaurantsclass.ui.MainActivity;
+import com.epicodus.myrestaurantsclass.ui.RestaurantsActivity;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;

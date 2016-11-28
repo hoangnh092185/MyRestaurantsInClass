@@ -1,4 +1,4 @@
-package com.epicodus.myrestaurantsclass;
+package com.epicodus.myrestaurantsclass.models;
 
 import java.util.ArrayList;
 
