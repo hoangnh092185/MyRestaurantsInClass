@@ -25,7 +25,6 @@ public class RestaurantsListActivity extends AppCompatActivity {
 
     @Bind(R.id.recyclerView) RecyclerView mRecyclerView;
     private RestaurantListAdapter mAdapter;
-
     public ArrayList<Restaurant> mRestaurants = new ArrayList<>();
 
     @Override

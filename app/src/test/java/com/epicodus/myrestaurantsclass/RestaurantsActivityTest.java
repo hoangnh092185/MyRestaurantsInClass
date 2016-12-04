@@ -30,7 +30,6 @@ public class RestaurantsActivityTest {
     @Before
     public void setup() {
         activity = Robolectric.setupActivity(RestaurantsListActivity.class);
-        mRestaurantListView = (ListView) activity.findViewById(R.id.listView);
     }
 
     @Test
