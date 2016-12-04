@@ -29,6 +29,7 @@ public class Restaurant {
         this.mPhone = phone;
         this.mWebsite = website;
         this.mRating = rating;
+        this.mImageUrl = imageUrl;
         this.mAddress = address;
         this.mLatitude = latitude;
         this.mLongitude = longitude;

@@ -3,6 +3,7 @@ package com.epicodus.myrestaurantsclass.adapters;
 import android.content.Context;
 import android.content.Intent;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -13,6 +14,7 @@ import com.epicodus.myrestaurantsclass.R;
 import com.epicodus.myrestaurantsclass.models.Restaurant;
 import com.epicodus.myrestaurantsclass.ui.RestaurantDetailActivity;
 import com.squareup.picasso.Picasso;
+
 
 import org.parceler.Parcels;
 
@@ -69,15 +71,6 @@ public class RestaurantListAdapter extends RecyclerView.Adapter<RestaurantListAd
             itemView.setOnClickListener(this);
         }
 
-        @Override
-        public void onClick(View v) {
-            int itemPosition = getLayoutPosition();
-            Intent intent = new Intent(mContext, RestaurantDetailActivity.class);
-            intent.putExtra("position", itemPosition);
-            intent.putExtra("restaurants", Parcels.wrap(mRestaurants));
-            mContext.startActivity(intent);
-        }
-
         public void bindRestaurant(Restaurant restaurant) {
 
             Picasso.with(mContext)
@@ -89,6 +82,15 @@ public class RestaurantListAdapter extends RecyclerView.Adapter<RestaurantListAd
             mNameTextView.setText(restaurant.getName());
             mCategoryTextView.setText(restaurant.getCategories().get(0));
             mRatingTextView.setText("Rating: " + restaurant.getRating() + "/5");
+        }
+
+        @Override
+        public void onClick(View v) {
+            int itemPosition = getLayoutPosition();
+            Intent intent = new Intent(mContext, RestaurantDetailActivity.class);
+            intent.putExtra("position", itemPosition);
+            intent.putExtra("restaurants", Parcels.wrap(mRestaurants));
+            mContext.startActivity(intent);
         }
     }
 }
