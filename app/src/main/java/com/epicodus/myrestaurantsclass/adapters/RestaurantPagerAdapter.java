@@ -1,6 +1,5 @@
 package com.epicodus.myrestaurantsclass.adapters;
 
-
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
@@ -36,3 +35,4 @@ public class RestaurantPagerAdapter extends FragmentPagerAdapter {
         return mRestaurants.get(position).getName();
     }
 }
+
