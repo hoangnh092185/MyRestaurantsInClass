@@ -3,6 +3,7 @@ package com.epicodus.myrestaurantsclass.ui;
 import android.content.Intent;
 import android.graphics.Typeface;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -13,16 +14,18 @@ import android.widget.TextView;
 
 import com.epicodus.myrestaurantsclass.R;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 
 import butterknife.Bind;
 import butterknife.ButterKnife;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
     public static final String TAG = MainActivity.class.getSimpleName();
-
     @Bind(R.id.findRestaurantsButton) Button mFindRestaurantsButton;
     @Bind(R.id.appNameTextView) TextView mAppNameTextView;
     @Bind(R.id.savedRestaurantsButton) Button mSavedRestaurantsButton;
+    private FirebaseAuth mAuth;
+    private FirebaseAuth.AuthStateListener mAuthListener;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -33,22 +36,35 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         Typeface ostrichFont = Typeface.createFromAsset(getAssets(), "fonts/ostrich-regular.ttf");
         mAppNameTextView.setTypeface(ostrichFont);
 
+        mAuth = FirebaseAuth.getInstance();
+        mAuthListener = new FirebaseAuth.AuthStateListener() {
+            @Override
+            public void onAuthStateChanged(@NonNull FirebaseAuth firebaseAuth) {
+                FirebaseUser user = firebaseAuth.getCurrentUser();
+                if (user != null) {
+                    getSupportActionBar().setTitle("Welcome, " + user.getDisplayName() + "!");
+                } else {
+
+                }
+            }
+        };
+
         mFindRestaurantsButton.setOnClickListener(this);
         mSavedRestaurantsButton.setOnClickListener(this);
-
     }
 
+    @Override
     public void onClick(View v) {
         if(v == mFindRestaurantsButton) {
             Intent intent = new Intent(MainActivity.this, RestaurantsListActivity.class);
             startActivity(intent);
         }
+
         if (v == mSavedRestaurantsButton) {
             Intent intent = new Intent(MainActivity.this, SavedRestaurantListActivity.class);
             startActivity(intent);
         }
     }
-
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater = getMenuInflater();
@@ -71,4 +87,18 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         startActivity(intent);
         finish();
     }
+    @Override
+    public void onStart() {
+        super.onStart();
+        mAuth.addAuthStateListener(mAuthListener);
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        if (mAuthListener != null) {
+            mAuth.removeAuthStateListener(mAuthListener);
+        }
+    }
+
 }
