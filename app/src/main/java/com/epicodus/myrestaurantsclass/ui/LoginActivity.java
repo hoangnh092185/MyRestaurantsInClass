@@ -26,10 +26,8 @@ public class LoginActivity extends AppCompatActivity implements View.OnClickList
     public static final String TAG = CreateAccountActivity.class.getSimpleName();
 
     @Bind(R.id.registerTextView) TextView mRegisterTextView;
-    @Bind(R.id.passwordLoginButton)
-    Button mPasswordLoginButton;
-    @Bind(R.id.emailEditText)
-    EditText mEmailEditText;
+    @Bind(R.id.passwordLoginButton) Button mPasswordLoginButton;
+    @Bind(R.id.emailEditText) EditText mEmailEditText;
     @Bind(R.id.passwordEditText) EditText mPasswordEditText;
 
     private FirebaseAuth mAuth;
@@ -61,7 +59,6 @@ public class LoginActivity extends AppCompatActivity implements View.OnClickList
             }
         };
         createAuthProgressDialog();
-
     }
     private void createAuthProgressDialog() {
         mAuthProgressDialog = new ProgressDialog(this);
