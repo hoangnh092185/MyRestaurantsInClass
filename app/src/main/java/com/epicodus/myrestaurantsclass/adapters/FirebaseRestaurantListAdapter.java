@@ -1,6 +1,9 @@
 package com.epicodus.myrestaurantsclass.adapters;
 
 import android.content.Context;
+import android.support.v4.view.MotionEventCompat;
+import android.view.MotionEvent;
+import android.view.View;
 
 import com.epicodus.myrestaurantsclass.models.Restaurant;
 import com.epicodus.myrestaurantsclass.util.ItemTouchHelperAdapter;
@@ -14,6 +17,7 @@ import com.google.firebase.database.Query;
  */
 
 public class FirebaseRestaurantListAdapter extends FirebaseRecyclerAdapter <Restaurant, FirebaseRestaurantViewHolder> implements ItemTouchHelperAdapter {
+
     private DatabaseReference mRef;
     private OnStartDragListener mOnStartDragListener;
     private Context mContext;
@@ -26,8 +30,17 @@ public class FirebaseRestaurantListAdapter extends FirebaseRecyclerAdapter <Rest
 
     }
     @Override
-    protected void populateViewHolder(FirebaseRestaurantViewHolder viewHolder, Restaurant model, int position){
+    protected void populateViewHolder(final FirebaseRestaurantViewHolder viewHolder, Restaurant model, int position) {
         viewHolder.bindRestaurant(model);
+        viewHolder.mRestaurantImageView.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                if (MotionEventCompat.getActionMasked(event) == MotionEvent.ACTION_DOWN) {
+                    mOnStartDragListener.onStartDrag(viewHolder);
+                }
+                return false;
+            }
+        });
     }
     @Override
     public boolean onItemMove(int fromPosition, int toPosition){
