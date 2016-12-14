@@ -17,6 +17,7 @@ import com.epicodus.myrestaurantsclass.R;
 import com.epicodus.myrestaurantsclass.models.Restaurant;
 import com.epicodus.myrestaurantsclass.ui.RestaurantDetailActivity;
 import com.epicodus.myrestaurantsclass.ui.RestaurantDetailFragment;
+import com.epicodus.myrestaurantsclass.util.OnRestaurantSelectedListener;
 import com.squareup.picasso.Picasso;
 
 import org.parceler.Parcels;
@@ -35,16 +36,18 @@ public class RestaurantListAdapter extends RecyclerView.Adapter<RestaurantListAd
 
     private ArrayList<Restaurant> mRestaurants = new ArrayList<>();
     private Context mContext;
+    private OnRestaurantSelectedListener mOnRestaurantSelectedListener;
 
-    public RestaurantListAdapter(Context context, ArrayList<Restaurant> restaurants) {
+    public RestaurantListAdapter(Context context, ArrayList<Restaurant> restaurants, OnRestaurantSelectedListener restaurantSelectedListener) {
         mContext = context;
         mRestaurants = restaurants;
+        mOnRestaurantSelectedListener = restaurantSelectedListener;
     }
 
     @Override
     public RestaurantListAdapter.RestaurantViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.restaurant_list_item, parent, false);
-        RestaurantViewHolder viewHolder = new RestaurantViewHolder(view);
+        RestaurantViewHolder viewHolder = new RestaurantViewHolder(view, mRestaurants, mOnRestaurantSelectedListener);
         return viewHolder;
     }
 
@@ -63,18 +66,24 @@ public class RestaurantListAdapter extends RecyclerView.Adapter<RestaurantListAd
         @Bind(R.id.restaurantNameTextView) TextView mNameTextView;
         @Bind(R.id.categoryTextView) TextView mCategoryTextView;
         @Bind(R.id.ratingTextView) TextView mRatingTextView;
+
         private Context mContext;
-
         private int mOrientation;
+        private ArrayList<Restaurant> mRestaurants = new ArrayList<>();
+        private OnRestaurantSelectedListener mRestaurantSelectedListener;
 
-        public RestaurantViewHolder(View itemView) {
+        public RestaurantViewHolder(View itemView, ArrayList<Restaurant> restaurants, OnRestaurantSelectedListener restaurantSelectedListener) {
             super(itemView);
             ButterKnife.bind(this, itemView);
+
             mContext = itemView.getContext();
             itemView.setOnClickListener(this);
 
             // Determines the current orientation of the device:
             mOrientation = itemView.getResources().getConfiguration().orientation;
+            mRestaurants = restaurants;
+            mRestaurantSelectedListener = restaurantSelectedListener;
+
 
             // Checks if the recorded orientation matches Android's landscape configuration.
             // if so, we create a new DetailFragment to display in our special landscape layout:
@@ -112,6 +121,7 @@ public class RestaurantListAdapter extends RecyclerView.Adapter<RestaurantListAd
         public void onClick(View v) {
             // Determines the position of the restaurant clicked:
             int itemPosition = getLayoutPosition();
+            mRestaurantSelectedListener.onRestaurantSelected(itemPosition, mRestaurants);
             if (mOrientation == Configuration.ORIENTATION_LANDSCAPE) {
                 createDetailFragment(itemPosition);
             } else {
