@@ -22,8 +22,6 @@ import org.parceler.Parcels;
 
 import java.util.ArrayList;
 
-import static com.epicodus.myrestaurantsclass.R.id.restaurantImageView;
-
 /**
  * Created by Guest on 12/3/16.
  */
@@ -40,7 +38,6 @@ public class FirebaseRestaurantViewHolder extends RecyclerView.ViewHolder implem
         super(itemView);
         mView = itemView;
         mContext = itemView.getContext();
-        itemView.setOnClickListener(this);
     }
 
     public void bindRestaurant(Restaurant restaurant) {
