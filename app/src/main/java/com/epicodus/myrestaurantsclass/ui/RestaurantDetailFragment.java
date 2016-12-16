@@ -1,10 +1,17 @@
 package com.epicodus.myrestaurantsclass.ui;
 
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
+import android.provider.MediaStore;
 import android.support.v4.app.Fragment;
+import android.util.Base64;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
@@ -16,12 +23,17 @@ import com.epicodus.myrestaurantsclass.R;
 import com.epicodus.myrestaurantsclass.models.Restaurant;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 import com.squareup.picasso.Picasso;
 
 import org.parceler.Parcels;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 
 import butterknife.Bind;
@@ -45,6 +57,7 @@ public class RestaurantDetailFragment extends Fragment implements View.OnClickLi
     private ArrayList<Restaurant> mRestaurants;
     private int mPosition;
     private String mSource;
+    private static final int REQUEST_IMAGE_CAPTURE = 111;
 
     public static RestaurantDetailFragment newInstance(ArrayList<Restaurant> restaurants, Integer position, String source) {
         RestaurantDetailFragment restaurantDetailFragment = new RestaurantDetailFragment();
@@ -75,11 +88,72 @@ public class RestaurantDetailFragment extends Fragment implements View.OnClickLi
         mSource = getArguments().getString(Constants.KEY_SOURCE);
         setHasOptionsMenu(true);
     }
+    @Override
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        super.onCreateOptionsMenu(menu, inflater);
+        if (mSource.equals(Constants.SOURCE_SAVED)) {
+            inflater.inflate(R.menu.menu_photo, menu);
+        } else {
+            inflater.inflate(R.menu.menu_main, menu);
+        }
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.action_photo:
+                onLaunchCamera();
+            default:
+                break;
+        }
+        return false;
+    }
+    public void onLaunchCamera() {
+        Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        if (takePictureIntent.resolveActivity(getActivity().getPackageManager()) != null) {
+            startActivityForResult(takePictureIntent, REQUEST_IMAGE_CAPTURE);
+        }
+    }
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == getActivity().RESULT_OK) {
+            Bundle extras = data.getExtras();
+            Bitmap imageBitmap = (Bitmap) extras.get("data");
+            mImageLabel.setImageBitmap(imageBitmap);
+            encodeBitmapAndSaveToFirebase(imageBitmap);
+        }
+    }
+    public void encodeBitmapAndSaveToFirebase(Bitmap bitmap) {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        bitmap.compress(Bitmap.CompressFormat.PNG, 100, baos);
+        String imageEncoded = Base64.encodeToString(baos.toByteArray(), Base64.DEFAULT);
+        DatabaseReference ref = FirebaseDatabase.getInstance()
+                .getReference(Constants.FIREBASE_CHILD_RESTAURANTS)
+                .child(FirebaseAuth.getInstance().getCurrentUser().getUid())
+                .child(mRestaurant.getPushId())
+                .child("imageUrl");
+        ref.setValue(imageEncoded);
+    }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_restaurant_detail, container, false);
         ButterKnife.bind(this, view);
+
+        if (!mRestaurant.getImageUrl().contains("http")) {
+            try {
+                Bitmap image = decodeFromFirebaseBase64(mRestaurant.getImageUrl());
+                mImageLabel.setImageBitmap(image);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }else{
+            Picasso.with(view.getContext())
+                    .load(mRestaurant.getImageUrl())
+                    .resize(MAX_WIDTH, MAX_HEIGHT)
+                    .centerCrop()
+                    .into(mImageLabel);
+        }
 
         if (mSource.equals(Constants.SOURCE_SAVED)) {
             mSaveRestaurantButton.setVisibility(View.GONE);
@@ -87,12 +161,6 @@ public class RestaurantDetailFragment extends Fragment implements View.OnClickLi
             // This line of code should already exist. Make sure it now resides in this conditional:
             mSaveRestaurantButton.setOnClickListener(this);
         }
-
-        Picasso.with(view.getContext())
-                .load(mRestaurant.getImageUrl())
-                .resize(MAX_WIDTH, MAX_HEIGHT)
-                .centerCrop()
-                .into(mImageLabel);
 
         mNameLabel.setText(mRestaurant.getName());
         mCategoriesLabel.setText(android.text.TextUtils.join(", ", mRestaurant.getCategories()));
@@ -107,6 +175,10 @@ public class RestaurantDetailFragment extends Fragment implements View.OnClickLi
         mSaveRestaurantButton.setOnClickListener(this);
 
         return view;
+    }
+    public static Bitmap decodeFromFirebaseBase64(String image) throws IOException {
+        byte[] decodedByteArray = android.util.Base64.decode(image, Base64.DEFAULT);
+        return BitmapFactory.decodeByteArray(decodedByteArray, 0, decodedByteArray.length);
     }
 
     @Override
@@ -131,15 +203,41 @@ public class RestaurantDetailFragment extends Fragment implements View.OnClickLi
         if (v == mSaveRestaurantButton) {
             FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
             String uid = user.getUid();
-            DatabaseReference restaurantRef = FirebaseDatabase
+
+            final DatabaseReference restaurantRef = FirebaseDatabase
                     .getInstance()
                     .getReference(Constants.FIREBASE_CHILD_RESTAURANTS)
                     .child(uid);
-            DatabaseReference pushRef = restaurantRef.push();
-            String pushId = pushRef.getKey();
-            mRestaurant.setPushId(pushId);
-            pushRef.setValue(mRestaurant);
-            Toast.makeText(getContext(), "Saved", Toast.LENGTH_SHORT).show();
+
+            restaurantRef.addListenerForSingleValueEvent(new ValueEventListener() {
+                @Override
+                public void onDataChange(DataSnapshot dataSnapshot) {
+                    boolean match = false;
+                    for (DataSnapshot snapshot : dataSnapshot.getChildren()){
+                        String currentId = snapshot.getValue(Restaurant.class).getName();
+                        if(currentId.equals(mRestaurant.getName())){
+                            match = true;
+                            Toast.makeText(getContext(), mRestaurant.getName() + " already in the list", Toast.LENGTH_SHORT).show();
+                            break;
+                        }
+                    }
+                    if (!match){
+                        DatabaseReference pushRef = restaurantRef.push();
+                        String pushId = pushRef.getKey();
+                        mRestaurant.setPushId(pushId);
+                        pushRef.setValue(mRestaurant);
+                        Toast.makeText(getContext(), "Saved", Toast.LENGTH_SHORT).show();
+                    }
+                    else {
+
+                        Toast.makeText(getContext(), mRestaurant.getName() + " already in the list", Toast.LENGTH_SHORT).show();
+                    }
+                }
+
+                @Override
+                public void onCancelled(DatabaseError databaseError) {
+                }
+            });
         }
     }
 }
